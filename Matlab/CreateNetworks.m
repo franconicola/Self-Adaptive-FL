@@ -1,26 +1,15 @@
-function [networks, subsets, loss] = CreateNetworks(numDevices)
+function [networks, subsets, loss] = CreateNetworks(numDevices, dataset, options)
 % CREATE NETWORKS
 % Creation of subsets and neural network models:
 % In this example, we are using the digit dataset split into 'numDevices' 
 % subsets and then we train for the first time the network onto a subset. 
-
-% Load the dataset
-digitDatasetPath = fullfile(matlabroot,'toolbox','nnet', ...
-    'nndemos','nndatasets','DigitDataset');
-imds = imageDatastore(digitDatasetPath, 'IncludeSubfolders', ...
-    true, 'LabelSource','foldernames');
-
-% Training options
-options = trainingOptions('sgdm', 'MaxEpochs', 1,...
-    'InitialLearnRate',1e-4, 'Verbose',false);
-    %'Plots', 'training-progress');
 
     
 % Split the Dataset
 for i = 1:numDevices
     
     if i == 1
-        [subsets{i}, subsets{i + 1}] = splitEachLabel(imds, 1 / numDevices);
+        [subsets{i}, subsets{i + 1}] = splitEachLabel(dataset, 1 / numDevices);
     elseif i < numDevices
         [subsets{i}, subsets{i + 1}] = splitEachLabel(subsets{i}, ...
             1 / (numDevices - i + 1));
