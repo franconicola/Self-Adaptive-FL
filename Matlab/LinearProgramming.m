@@ -4,7 +4,7 @@ function [subsetsOrder] = LinearProgramming(numDevices, loss)
 
 
 % Maximum number 
-M = sum([loss{:}]);
+M = sum(loss);
 
 % Number of devices
 m = numDevices;
@@ -16,7 +16,7 @@ v = m*2;
 iter_of_comm = m*m;
 
 % Cost vector (L)
-cost = [[loss{:}] M*ones(1, v)];
+cost = [loss M*ones(1, v)];
 
 % The problem matrix
 H = Hgeneration(m, cost);

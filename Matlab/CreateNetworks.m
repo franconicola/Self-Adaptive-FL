@@ -1,46 +1,70 @@
-function [networks, subsets, loss] = CreateNetworks(numDevices, dataset, options)
+function [networks, subsets, loss] = CreateNetworks(param, dataset)
 % CREATE NETWORKS
 % Creation of subsets and neural network models:
 % In this example, we are using the digit dataset split into 'numDevices' 
 % subsets and then we train for the first time the network onto a subset. 
 
-    
-% Split the Dataset
-for i = 1:numDevices
-    
+
+
+% Split dataset between Industries
+      
+for i = 1:param.numIndustries
+
     if i == 1
-        [subsets{i}, subsets{i + 1}] = splitEachLabel(dataset, 1 / numDevices);
-    elseif i < numDevices
-        [subsets{i}, subsets{i + 1}] = splitEachLabel(subsets{i}, ...
-            1 / (numDevices - i + 1));
+        [industry{1}, industry{2}] = ...
+            splitEachLabel(dataset, 1 / param.numIndustries);
+    elseif i < param.numIndustries
+        [industry{i}, industry{i + 1}] = ...
+            splitEachLabel(industry{i}, ...
+            1 / (param.numIndustries - i + 1));
     end
+
 end
 
+
+% Split dataset between Devices
+% subsets{i, j} is the subset of industry i and device j
+for i = 1:param.numIndustries
+    for j = 1:param.numDevices
+    
+        if j == 1
+            [subsets{i, 1}, subsets{i, 2}] = ...
+                splitEachLabel(industry{i}, 1 / param.numDevices);
+        elseif j < param.numDevices
+            [subsets{i, j}, subsets{i, j + 1}] = ...
+                splitEachLabel(subsets{i, j}, ...
+                1 / (param.numDevices - j + 1));
+        end
+
+    end
+end
 
 % Create Neural Networks
-for i = 1:numDevices
-    
-    % Layers definition
-    layers{i} = [ imageInputLayer([28 28 1])
-    convolution2dLayer(5,20)
-    reluLayer
-    maxPooling2dLayer(2,'Stride',2)
-    fullyConnectedLayer(10)
-    softmaxLayer
-    classificationLayer];
-    
-    % Train the network
-    networks{i} = trainNetwork(subsets{i}, layers{i}, options);
-    
-    % Provide the first Loss
-    for j = 1:numDevices
-        YPred = classify(networks{i}, subsets{j});
-        YTest = subsets{j}.Labels;
-        loss{(i - 1)*numDevices + j} = 1-sum(YPred == YTest)/numel(YTest);
-    end
-    
-end
+for i = 1:param.numIndustries
+    for j = 1:param.numDevices
 
+        % Layers definition
+        layers{i, j} = [ imageInputLayer([28 28 1])
+        convolution2dLayer(5,20)
+        reluLayer
+        maxPooling2dLayer(2,'Stride',2)
+        fullyConnectedLayer(10)
+        softmaxLayer
+        classificationLayer];
+
+        % Train the network
+        networks{i, j} = trainNetwork(subsets{i, j}, ...
+            layers{i, j}, param.options);
+
+        % Provide the first Loss
+        for k = 1:param.numDevices
+            YPred = classify(networks{i, j}, subsets{i, k});
+            YTest = subsets{i, k}.Labels;
+            loss.Function{i, (j - 1)*param.numDevices + k} = ...
+                1-sum(YPred == YTest)/numel(YTest);
+        end
+    end
+end
 
 end
 
