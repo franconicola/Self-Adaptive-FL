@@ -8,17 +8,17 @@ close all;
 param.numIndustries = 2;
 
 % Number of devices
-param.numDevices = 3;
+param.numDevices = 5;
 
 % Number of local iterations
 param.localIterations = 1:param.numDevices;
 
 % Number of global iterations
-param.globalIterations = 1:param.numDevices;
+param.globalIterations = 1:param.numIndustries;
 
 
 % Training options
-param.options = trainingOptions('sgdm', 'MaxEpochs', 1,...
+param.options = trainingOptions('sgdm', 'MaxEpochs', 5,...
     'InitialLearnRate',1e-4, 'Verbose',false);
     %'Plots', 'training-progress');
     

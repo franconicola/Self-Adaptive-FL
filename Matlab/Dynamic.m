@@ -36,8 +36,17 @@ for global_it = param.globalIterations
                 if j == 1
                     loss.Minimum{i, iter} = ...
                         loss.Devices{i, 1, iter};
+                    
+                    % Store the best one
+                    loss.MinDevice{i} = 1;
+                    
                 elseif loss.Devices{i, j, iter} < loss.Minimum{i, iter}
+
                     loss.Minimum{i, iter} = loss.Devices{i, j, iter};
+                    
+                    % Store the best one
+                    loss.MinDevice{i} = j;
+
                 end
                
                 
@@ -100,39 +109,35 @@ for global_it = param.globalIterations
     %% % Federated Learning
     
     % TODO: Should provide the minimum model???
-    
+
     % Industries 
     for i = 1:param.numIndustries
 
-        % Devices
-        for j = 1:param.numDevices
     
-            % Federated Learning sum the weights
-            if i == 1 && j == 1
-                
-                % Initialize layer vector used for aggregation
-                layers = networks{1, 1}.Layers;
+        % Federated Learning sum the weights
+        if i == 1      
             
-            else
-                for l = 1:length(layers)
+            % Initialize layer vector used for aggregation
+            layers = networks{1, loss.MinDevice{1}}.Layers;
+            
+        else
+            for l = 1:length(layers)
 
-                    % Does layer l have weights?
-                    if isprop(layers(l), 'Weights') 
-                        layers(l).Weights = layers(l).Weights + ...
-                            networks{i, j}.Layers(l).Weights;
-                    end
-
-                    % Does layer l have biases?
-                    if isprop(layers(l), 'Bias')
-                        layers(l).Bias = layers(l).Bias + ...
-                            networks{i, j}.Layers(l).Bias;
-                        
-                    end
-                    
+                % Does layer l have weights?
+                if isprop(layers(l), 'Weights') 
+                    layers(l).Weights = layers(l).Weights + ...
+                        networks{i, loss.MinDevice{i}}.Layers(l).Weights;
                 end
-                
+
+                % Does layer l have biases?
+                if isprop(layers(l), 'Bias')
+                    layers(l).Bias = layers(l).Bias + ...
+                        networks{i, loss.MinDevice{i}}.Layers(l).Bias;
+
+                end
+
             end
-            
+
         end
         
     end
