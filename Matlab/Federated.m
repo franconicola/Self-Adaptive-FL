@@ -60,6 +60,9 @@ for global_it = param.globalIterations
             % Total loss
             loss.Tot{i, iter} = ...
                 sum([loss.Devices{i, :, iter}]) / param.numDevices;
+            % Total Accuracy
+            loss.AccuracyTot{i, iter} = ...
+                sum([loss.Accuracy{i, :}]) / param.numDevices^2;
         
         end
         
@@ -97,6 +100,8 @@ for global_it = param.globalIterations
                     YTest = subsets{i, k}.Labels;
                     loss.Function{i, (j - 1)*param.numDevices + k} = ...
                         1 - sum(YPred == YTest)/numel(YTest);
+                    loss.Accuracy{i, (j - 1)*param.numDevices + k} = ...
+                        sum(YPred == YTest)/numel(YTest);
 
                 end
             end

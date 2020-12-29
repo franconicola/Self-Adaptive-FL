@@ -62,6 +62,8 @@ for i = 1:param.numIndustries
             YTest = subsets{i, k}.Labels;
             loss.Function{i, (j - 1)*param.numDevices + k} = ...
                 1-sum(YPred == YTest)/numel(YTest);
+            loss.Accuracy{i, (j - 1)*param.numDevices + k} = ...
+                sum(YPred == YTest)/numel(YTest);
         end
     end
 end

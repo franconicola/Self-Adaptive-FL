@@ -59,8 +59,10 @@ for global_it = param.globalIterations
             % Total loss        
             loss.Tot{i, iter} = ...
                 sum([loss.Devices{i, :, iter}]) / param.numDevices;
+            loss.AccuracyTot{i, iter} = ...
+                sum([loss.Accuracy{i, :}]) / param.numDevices^2;
 
-            % TODO: Give me a definition of this condition...
+            % Not train in the last step
             if local_it < param.localIterations(end)
 
                 % Linear Programming
@@ -88,6 +90,9 @@ for global_it = param.globalIterations
                         loss.Function{i, ...
                             (j - 1)*param.numDevices + k} = ...
                             1 - sum(YPred == YTest) / numel(YTest);
+                        loss.Accuracy{i, ...
+                            (j - 1)*param.numDevices + k} = ...
+                            sum(YPred == YTest) / numel(YTest);
 
                     end
 
@@ -106,9 +111,8 @@ for global_it = param.globalIterations
     
     
     
-    %% % Federated Learning
-    
-    % TODO: Should provide the minimum model???
+    %% Federated Learning
+
 
     % Industries 
     for i = 1:param.numIndustries
@@ -175,6 +179,8 @@ for global_it = param.globalIterations
                 YTest = subsets{i, k}.Labels;
                 loss.Function{i, (j - 1)*param.numDevices + k} = ...
                     1 - sum(YPred == YTest)/numel(YTest);
+                loss.Accuracy{i, (j - 1)*param.numDevices + k} = ...
+                    sum(YPred == YTest)/numel(YTest);
 
             end
             

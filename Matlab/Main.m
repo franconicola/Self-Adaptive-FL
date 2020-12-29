@@ -1,3 +1,5 @@
+% Requires R2019b or later
+
 clc;
 clear;
 close all;
@@ -8,17 +10,16 @@ close all;
 param.numIndustries = 2;
 
 % Number of devices
-param.numDevices = 5;
+param.numDevices = 3;
 
 % Number of local iterations
-param.localIterations = 1:param.numDevices;
+param.localIterations = 1:10;
 
 % Number of global iterations
-param.globalIterations = 1:param.numIndustries;
-
+param.globalIterations = 1:10;
 
 % Training options
-param.options = trainingOptions('sgdm', 'MaxEpochs', 5,...
+param.options = trainingOptions('sgdm', 'MaxEpochs', 1,...
     'InitialLearnRate',1e-4, 'Verbose',false);
     %'Plots', 'training-progress');
     
@@ -30,20 +31,20 @@ dataset = imageDatastore(digitDatasetPath, 'IncludeSubfolders', ...
     true, 'LabelSource','foldernames');
 
 
-%% First Train
+% First Train
 
 [Nets, Subsets, Loss] = CreateNetworks(param, dataset);
 
 
-%% Proposed Approach
+% Proposed Approach
 
 dynamic_loss = Dynamic(Nets, Subsets, Loss, param);
 
-%% Federated Approach
+% Federated Approach
 
 federated_loss = Federated(Nets, Subsets, Loss, param);
 
-%% Plot and visualize
+% Plot and visualize
 
 Visualize(dynamic_loss, federated_loss, param);
 
