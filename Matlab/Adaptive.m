@@ -1,13 +1,16 @@
-function loss = Dynamic(networks, subsets, loss, param)
-% DYNAMIC 
-% Dynamic approach is the proposed approach
+function loss = Adaptive(networks, subsets, loss, param)
+% SELF-ADAPTIVE
+% Self-adaptive approach is the proposed approach
 % Detailed explanation goes here
 
 
 
 % Global Aggregation
 for global_it = param.globalIterations
-    %% Dynamic Framework
+    % Adaptive Framework
+    
+    % Store the number of global iterations
+    g_step = global_it*param.localIterations(end);
 
     % Industries 
     for i = 1:param.numIndustries
@@ -18,8 +21,7 @@ for global_it = param.globalIterations
         % Local Iterations
         for local_it = param.localIterations
             
-            % Save the iteration
-            
+            % Store the number of local iterations
             iter = (global_it - 1)*param.localIterations(end) + ...
                 local_it;
             
@@ -80,8 +82,13 @@ for global_it = param.globalIterations
                     tempSubsets{i, j} = subsets{i, subsetsOrder(j)};
 
                     % Retrain Neural networks
-                    networks{i, j} = trainNetwork(tempSubsets{i, j}, ...
+                    [networks{i, j}, options] = ...
+                        trainNetwork(tempSubsets{i, j}, ...
                         networks{i, j}.Layers, param.options);
+                    
+                    % Store the number of steps
+                    loss.Steps{i, j, iter} = size(options.TrainingLoss, 2);
+
 
                     % Individual Subsets Loss funtions
                     for k = 1:param.numDevices
@@ -111,7 +118,7 @@ for global_it = param.globalIterations
     
     
     
-    %% Federated Learning
+    % Federated Learning
 
 
     % Industries 
@@ -152,13 +159,13 @@ for global_it = param.globalIterations
         % Does layer l have weights?
         if isprop(layers(l), 'Weights')
             
-            layers(l).Weights = layers(l).Weights / param.numDevices;
+            layers(l).Weights = layers(l).Weights / param.numIndustries;
         end
         
         % Does layer l have biases?
         if isprop(layers(l), 'Bias')
         
-            layers(l).Bias = layers(l).Bias / param.numDevices;
+            layers(l).Bias = layers(l).Bias / param.numIndustries;
         end
     end
 
@@ -169,9 +176,12 @@ for global_it = param.globalIterations
         for j = 1:param.numDevices
         
             % Retrain Neural networks
-            networks{i, j} = trainNetwork(subsets{i, j}, ...
-                layers, param.options);
-
+            [networks{i, j}, options] = ... 
+                trainNetwork(subsets{i, j}, layers, param.options);
+            
+            % Store the number of steps
+            loss.Steps{i, j, g_step} = size(options.TrainingLoss, 2);
+            
             for k = 1:param.numDevices
 
                 % Compute the Loss for each device

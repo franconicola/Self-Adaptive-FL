@@ -12,15 +12,14 @@ for i = 1:param.numIndustries
 
     if i == 1
         [industry{1}, industry{2}] = ...
-            splitEachLabel(dataset, 1 / param.numIndustries);
+            splitEachLabel(dataset, 1 / param.numIndustries, 'randomize');
     elseif i < param.numIndustries
         [industry{i}, industry{i + 1}] = ...
             splitEachLabel(industry{i}, ...
-            1 / (param.numIndustries - i + 1));
+            1 / (param.numIndustries - i + 1), 'randomize');
     end
 
 end
-
 
 % Split dataset between Devices
 % subsets{i, j} is the subset of industry i and device j
@@ -29,32 +28,54 @@ for i = 1:param.numIndustries
     
         if j == 1
             [subsets{i, 1}, subsets{i, 2}] = ...
-                splitEachLabel(industry{i}, 1 / param.numDevices);
+                splitEachLabel(industry{i}, 1 / param.numDevices, ...
+                'randomize');
         elseif j < param.numDevices
             [subsets{i, j}, subsets{i, j + 1}] = ...
                 splitEachLabel(subsets{i, j}, ...
-                1 / (param.numDevices - j + 1));
+                1 / (param.numDevices - j + 1), 'randomize');
         end
 
     end
 end
 
+
 % Create Neural Networks
 for i = 1:param.numIndustries
     for j = 1:param.numDevices
 
-        % Layers definition
-        layers{i, j} = [ imageInputLayer([28 28 1])
-        convolution2dLayer(5,20)
-        reluLayer
-        maxPooling2dLayer(2,'Stride',2)
-        fullyConnectedLayer(10)
-        softmaxLayer
-        classificationLayer];
 
+        % Layers definition
+        layers = [
+            imageInputLayer([28 28 1])
+
+            convolution2dLayer(3,8,'Padding','same')
+            batchNormalizationLayer
+            reluLayer
+
+            maxPooling2dLayer(2,'Stride',2)
+
+            convolution2dLayer(3,16,'Padding','same')
+            batchNormalizationLayer
+            reluLayer
+
+            maxPooling2dLayer(2,'Stride',2)
+
+            convolution2dLayer(3,32,'Padding','same')
+            batchNormalizationLayer
+            reluLayer
+
+            fullyConnectedLayer(10)
+            softmaxLayer
+            classificationLayer];
+        
         % Train the network
-        networks{i, j} = trainNetwork(subsets{i, j}, ...
-            layers{i, j}, param.options);
+        [networks{i, j}, options] = ... 
+            trainNetwork(subsets{i, j}, layers, param.options);
+        
+        % Store the number of steps
+        loss.Steps{i, j, 1} = size(options.TrainingLoss, 2);
+
 
         % Provide the first Loss
         for k = 1:param.numDevices

@@ -1,10 +1,21 @@
-function Visualize(dynamic_loss, federated_loss, param)
+function Visualize(adaptive_loss, federated_loss, param)
 % VISUALIZE 
 
-iterations = 1:param.localIterations(end)*param.globalIterations(end);
+last_step = param.localIterations(end)*param.globalIterations(end);
+ 
+% Find the number of iterations
+for iter = 1:last_step
+    % Iterations of first industry and first device
+    if iter == 1
+        iterations{iter} = adaptive_loss.Steps{1, 1, iter};
+    else
+        iterations{iter} = iterations{iter - 1} + ...
+            adaptive_loss.Steps{1, 1, iter};
+    end
+end
 
 disp('dynamic_loss.Devices')
-disp([dynamic_loss.Devices])
+disp([adaptive_loss.Devices])
 disp('federated_loss.Devices')
 disp([federated_loss.Devices])
 
@@ -17,11 +28,11 @@ tiledlayout(2,1) % Requires R2019b or later
 % Top plot
 ax1 = nexttile; 
 for i = 1:param.numIndustries
-    plot(ax1, iterations, [dynamic_loss.AccuracyTot{i, :}], '-', ...
+    plot(ax1, [iterations{:}], [adaptive_loss.AccuracyTot{i, :}], '-', ...
         'LineWidth', 2, ...
         'DisplayName', strcat('Adaptive Industry', sprintf('%2d', i)))
     hold on
-    plot(ax1, iterations, [federated_loss.AccuracyTot{i, :}], '--', ...
+    plot(ax1, [iterations{:}], [federated_loss.AccuracyTot{i, :}], '--', ...
         'LineWidth', 2, ...
         'DisplayName', strcat('Federated Industry', sprintf('%2d', i)))
 end
@@ -31,30 +42,31 @@ legend('Orientation', 'horizontal', 'Location', 'southoutside', ...
 % Bottom plot
 ax2 = nexttile; 
 for i = 1:param.numIndustries
-    plot(ax2, iterations, [dynamic_loss.Tot{i, :}], '-', ...
+    plot(ax2, [iterations{:}], [adaptive_loss.Tot{i, :}], '-', ...
         'LineWidth', 2, ... 
         'DisplayName', strcat('Adaptive Industry', sprintf('%2d', i)))
     hold on
-    plot(ax2, iterations, [federated_loss.Tot{i, :}], '--', ...
+    plot(ax2, [iterations{:}], [federated_loss.Tot{i, :}], '--', ...
         'LineWidth', 2, ... 
         'DisplayName', strcat('Federated Industry', sprintf('%2d', i)))
 end
 
 % Link the axes
 linkaxes([ax1, ax2],'x'); 
-xlabel('Iterations', 'FontSize', 16)
-ylabel(ax1, 'Accuracy', 'FontSize', 16) 
-ylabel(ax2, 'Loss', 'FontSize', 16) 
+xlabel('Iterations', 'FontSize', 16), xlim([0 inf])
+ylabel(ax1, 'Accuracy', 'FontSize', 16), ylim(ax1, [0 1])
+ylabel(ax2, 'Loss', 'FontSize', 16), ylim(ax2, [0 1]) 
+
 
 disp('dynamic_loss.Tot')
-disp([dynamic_loss.Tot])
+disp([adaptive_loss.Tot])
 disp('federated_loss.Tot')
 disp([federated_loss.Tot])
 
 fprintf('Total loss of our own method: %d \n', ...
-     min([dynamic_loss.Tot{:, iterations(end)}]));
+     min([adaptive_loss.Tot{:, last_step}]));
 fprintf('Total loss of federated method: %d \n', ...
-     min([federated_loss.Tot{:, iterations(end)}]));
+     min([federated_loss.Tot{:, last_step}]));
 
  
 %% Minumum

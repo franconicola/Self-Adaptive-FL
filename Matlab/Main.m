@@ -1,8 +1,8 @@
 % Requires R2019b or later
 
-clc;
-clear;
-close all;
+
+close all; 
+clear, clc
 
 %% Parameters
 
@@ -10,35 +10,47 @@ close all;
 param.numIndustries = 2;
 
 % Number of devices
-param.numDevices = 3;
+param.numDevices = 5;
 
 % Number of local iterations
-param.localIterations = 1:10;
+param.localIterations = 1:3;
 
 % Number of global iterations
-param.globalIterations = 1:10;
+param.globalIterations = 1:3;
 
 % Training options
-param.options = trainingOptions('sgdm', 'MaxEpochs', 1,...
-    'InitialLearnRate',1e-4, 'Verbose',false);
-    %'Plots', 'training-progress');
+param.options = trainingOptions('sgdm', ...
+    'InitialLearnRate', 1e-3, ...
+    'MaxEpochs', 5, ...
+    'Shuffle','every-epoch', ...
+    'Verbose', false);
+    %   'Plots', 'training-progress');
     
-% Load the dataset
+%% Load the dataset
+
 digitDatasetPath = fullfile(matlabroot,'toolbox','nnet', ...
     'nndemos','nndatasets','DigitDataset');
 
 dataset = imageDatastore(digitDatasetPath, 'IncludeSubfolders', ...
     true, 'LabelSource','foldernames');
 
+%% Load MNIST Dataset
 
-% First Train
+imgs = processImagesMNIST('train-images-idx3-ubyte');
+labels = processLabelsMNIST('train-labels-idx1-ubyte');
+%[imgs, labels] = readMNIST('train-images-idx3-ubyte', ...
+%    'train-labels-idx1-ubyte', 60000, 0);
+
+%dataset = read(imgs) %, labels)
+
+%% First Train
 
 [Nets, Subsets, Loss] = CreateNetworks(param, dataset);
 
 
 % Proposed Approach
 
-dynamic_loss = Dynamic(Nets, Subsets, Loss, param);
+adaptive_loss = Adaptive(Nets, Subsets, Loss, param);
 
 % Federated Approach
 
@@ -46,6 +58,6 @@ federated_loss = Federated(Nets, Subsets, Loss, param);
 
 % Plot and visualize
 
-Visualize(dynamic_loss, federated_loss, param);
+Visualize(adaptive_loss, federated_loss, param);
 
 

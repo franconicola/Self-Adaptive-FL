@@ -1,8 +1,6 @@
 function loss = Federated(networks, subsets, loss, param)
 % FEDERATED LEARNING
 
-
-
 % Global Aggregation
 for global_it = param.globalIterations
 
@@ -12,12 +10,12 @@ for global_it = param.globalIterations
         % Save the iteration
         iter = (global_it - 1)*param.localIterations(end) + ...
             local_it;
-        
-        % Initialize layer vector used for aggregation
-        layers = networks{1}.Layers;
 
         % Industries 
         for i = 1:param.numIndustries
+            
+            % Initialize layer vector used for aggregation
+            layers = networks{i, 1}.Layers;
             
             % Devices
             for j = 1:param.numDevices
@@ -30,9 +28,12 @@ for global_it = param.globalIterations
             
                 % Minimum loss
                 if j == 1
+                    
                     loss.Minimum{i, iter} = ...
                         loss.Devices{i, 1, iter};
+                    
                 elseif loss.Devices{i, j, iter} < loss.Minimum{i, iter}
+                    
                     loss.Minimum{i, iter} = loss.Devices{i, j, iter};
                 end
                 
@@ -63,50 +64,66 @@ for global_it = param.globalIterations
             % Total Accuracy
             loss.AccuracyTot{i, iter} = ...
                 sum([loss.Accuracy{i, :}]) / param.numDevices^2;
-        
-        end
-        
-       % Average the model    
-        for l = 1:length(layers)
+            
+                
+            % Average the model    
+            for l = 1:length(layers)
 
-            % Does layer l have weights?
-            if isprop(layers(l), 'Weights')
+                % Does layer l have weights?
+                if isprop(layers(l), 'Weights')
 
-                layers(l).Weights = layers(l).Weights / param.numDevices;
+                    layers(l).Weights = ...
+                        layers(l).Weights / param.numDevices;
+                end
+
+                % Does layer l have biases?
+                if isprop(layers(l), 'Bias')
+
+                    layers(l).Bias = ...
+                        layers(l).Bias / param.numDevices;
+                end
             end
-
-            % Does layer l have biases?
-            if isprop(layers(l), 'Bias')
-
-                layers(l).Bias = layers(l).Bias / param.numDevices;
-            end
-        end
-        
-        
-        % Industries 
-        for i = 1:param.numIndustries
             
             % Devices
             for j = 1:param.numDevices
 
                 % Retrain Neural networks
-                networks{i, j} = trainNetwork(subsets{i, j}, ...
-                    layers, param.options);
+                [networks{i, j}, options] = ... 
+                    trainNetwork(subsets{i, j}, layers, ...
+                    param.options);
 
+
+                % Store the number of steps
+                loss.Steps{i, j, iter} = ...
+                    size(options.TrainingLoss, 2);
+
+                % Iterate through the dataset 
                 for k = 1:param.numDevices
 
-                    % Compute the Loss for each device
-                    YPred = classify(networks{i, j}, subsets{i, k});
+                    % Test the trained network of device j 
+                    % through the entire data set
+                    YPred = classify(networks{i, j}, ...
+                        subsets{i, k});
+                    
                     YTest = subsets{i, k}.Labels;
-                    loss.Function{i, (j - 1)*param.numDevices + k} = ...
+                    
+                    % Compute the loss 
+                    loss.Function{i, (j - 1)*...
+                        param.numDevices + k} = ...
                         1 - sum(YPred == YTest)/numel(YTest);
-                    loss.Accuracy{i, (j - 1)*param.numDevices + k} = ...
+                    
+                    % Compute the accuracy
+                    loss.Accuracy{i, (j - 1)*...
+                        param.numDevices + k} = ...
                         sum(YPred == YTest)/numel(YTest);
 
                 end
             end
+            
         end
+        
     end
+    
 end
 
 

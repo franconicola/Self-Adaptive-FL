@@ -60,7 +60,7 @@ for e = 1:iter_of_comm
             sortrows(H_tot(i +(i-1)*v:v+i+(i-1)*v,m+1:m+v)','descend')';
         
         red_cost(e,i) = ones(1,v)*...
-        (inv(H_tot(1 +(i-1)*v:v+(i-1)*v,m+1:m+v)')*H_tot(v+1,m+1:m+v)');
+        (H_tot(1 +(i-1)*v:v+(i-1)*v,m+1:m+v)'\H_tot(v+1,m+1:m+v)');
     end
 end
 
