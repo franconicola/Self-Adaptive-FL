@@ -1,96 +1,144 @@
-function Visualize(adaptive_loss, federated_loss, param)
+function Visualize(adaptive, federated, param)
 % VISUALIZE 
 
 last_step = param.localIterations(end)*param.globalIterations(end);
  
 % Find the number of iterations
-for iter = 1:last_step
-    % Iterations of first industry and first device
-    if iter == 1
-        iterations{iter} = adaptive_loss.Steps{1, 1, iter};
-    else
-        iterations{iter} = iterations{iter - 1} + ...
-            adaptive_loss.Steps{1, 1, iter};
-    end
+adap_steps = [adaptive.Steps{1, 1, :}];
+federated_steps = [federated.Steps{1, 1, :}];
+
+for iter = 2:last_step
+    
+    % Iterations of first factory and first device
+    adap_steps(iter) = adap_steps(iter) + adap_steps(iter - 1);
+    federated_steps(iter) = federated_steps(iter) + federated_steps(iter - 1);
+    
 end
 
-disp('dynamic_loss.Devices')
-disp([adaptive_loss.Devices])
-disp('federated_loss.Devices')
-disp([federated_loss.Devices])
+% Initialize the mean of the loss and accuracy
+adaptive_acc_mean = zeros(1, last_step);
+adaptive_loss_mean = zeros(1, last_step);
+federated_acc_mean = zeros(1, last_step);
+federated_loss_mean = zeros(1, last_step);
 
-%% Total 
+% Compute the mean of the loss and accuracy
+for iter = 1:last_step
+    
+    adaptive_acc_mean(iter) = sum([adaptive.AccuracyTot{:, iter}]) / ...
+        param.numFactories;
 
-figure('Name','Loss Function for Each Industry','NumberTitle','off');
+    adaptive_loss_mean(iter) = sum([adaptive.Tot{:, iter}]) / ...
+        param.numFactories;
+    
+    federated_acc_mean(iter) = sum([federated.AccuracyTot{:, iter}]) / ...
+        param.numFactories;
+    
+    federated_loss_mean(iter) = sum([federated.Tot{:, iter}]) / ...
+        param.numFactories;
+
+end
+
+%% Mean Plot 
+
+figure('Name', 'Mean', 'NumberTitle', 'off');
 
 tiledlayout(2,1) % Requires R2019b or later
 
-% Top plot
+% Top plot 
 ax1 = nexttile; 
-for i = 1:param.numIndustries
-    plot(ax1, [iterations{:}], [adaptive_loss.AccuracyTot{i, :}], '-', ...
-        'LineWidth', 2, ...
-        'DisplayName', strcat('Adaptive Industry', sprintf('%2d', i)))
-    hold on
-    plot(ax1, [iterations{:}], [federated_loss.AccuracyTot{i, :}], '--', ...
-        'LineWidth', 2, ...
-        'DisplayName', strcat('Federated Industry', sprintf('%2d', i)))
-end
-legend('Orientation', 'horizontal', 'Location', 'southoutside', ...
-    'FontSize', 10, 'NumColumns', 2)
 
+% Adaptive accuracy plot
+plot(ax1, adap_steps, adaptive_acc_mean, '-ko', 'LineWidth', 2, ...
+    'DisplayName', 'Self-Adaptive')
+
+hold on
+
+% Federated accuracy plot
+plot(ax1, federated_steps, federated_acc_mean, '-.bx', ...
+    'LineWidth', 2, 'DisplayName', 'Federated Averaging')
+
+% Legend
+legend('Orientation', 'horizontal', 'Location', 'northoutside', ...
+    'FontSize', 11, 'NumColumns', 3)
+ 
 % Bottom plot
 ax2 = nexttile; 
-for i = 1:param.numIndustries
-    plot(ax2, [iterations{:}], [adaptive_loss.Tot{i, :}], '-', ...
-        'LineWidth', 2, ... 
-        'DisplayName', strcat('Adaptive Industry', sprintf('%2d', i)))
-    hold on
-    plot(ax2, [iterations{:}], [federated_loss.Tot{i, :}], '--', ...
-        'LineWidth', 2, ... 
-        'DisplayName', strcat('Federated Industry', sprintf('%2d', i)))
-end
+
+% Adaptive loss plot
+plot(ax2, adap_steps, adaptive_loss_mean, '-ko', 'LineWidth', 2, ...
+    'DisplayName', 'Self-Adaptive')
+
+hold on
+
+% Federated loss plot
+plot(ax2, federated_steps, federated_loss_mean, '-.bx', ...
+    'LineWidth', 2, 'DisplayName', 'Federated Averaging')
+
+
 
 % Link the axes
 linkaxes([ax1, ax2],'x'); 
 xlabel('Iterations', 'FontSize', 16), xlim([0 inf])
-ylabel(ax1, 'Accuracy', 'FontSize', 16), ylim(ax1, [0 1])
-ylabel(ax2, 'Loss', 'FontSize', 16), ylim(ax2, [0 1]) 
+ylabel(ax1, 'Accuracy', 'FontSize', 16), ylim(ax1, [0.9 1])
+ylabel(ax2, 'Loss', 'FontSize', 16), ylim(ax2, [0 0.1]) 
 
 
-disp('dynamic_loss.Tot')
-disp([adaptive_loss.Tot])
-disp('federated_loss.Tot')
-disp([federated_loss.Tot])
+% Print Results
+fprintf('Accuracy of our own method: %d \n', ...
+    adaptive_acc_mean(round(last_step / 2)));
+fprintf('Accuracy of federated averaging method: %d \n', ...
+    federated_acc_mean(round(last_step / 2)));
 
-fprintf('Total loss of our own method: %d \n', ...
-     min([adaptive_loss.Tot{:, last_step}]));
-fprintf('Total loss of federated method: %d \n', ...
-     min([federated_loss.Tot{:, last_step}]));
 
- 
-%% Minumum
-
-% figure('Name','Minimum Loss of Each Industry','NumberTitle','off');
+% %% Second Plot
+%  
+% figure('Name','Each factory','NumberTitle','off');
 % 
-% for i = 1:param.numIndustries
-%     plot(iterations, [dynamic_loss.Minimum{i, :}], '-o', ...
-%         'LineWidth', 2, 'MarkerSize', 10)
+% tiledlayout(2,1) % Requires R2019b or later
+% 
+% 
+% % Top plot 
+% ax1_2 = nexttile; 
+% 
+% for i = 1:param.numFactories
+%     % Adaptive accuracy plot
+%     plot(ax1_2, adap_steps, [adaptive.AccuracyTot{i, :}], ...
+%         '-', 'LineWidth', 2, 'DisplayName', ...
+%         strcat('Self-Adaptive Factory', sprintf('%2d', i)))
 %     hold on
-%     plot(iterations, [federated_loss.Minimum{i, :}], '-+', ...
-%         'LineWidth', 2, 'MarkerSize', 10)
 % end
 % 
-% disp('dynamic_loss.Minimum')
-% disp([dynamic_loss.Minimum])
-% disp('federated_loss.Minimum')
-% disp([federated_loss.Minimum])
+% % Federated accuracy plot
+% plot(ax1_2, federated_steps, federated_acc_mean, '-', ...
+%     'LineWidth', 2, 'DisplayName', 'Baseline 1')
+% 
+%     
+% legend('Orientation', 'horizontal', 'Location', 'northoutside', ...
+%     'FontSize', 12, 'NumColumns', 2)
+%  
+% % Bottom plot
+% ax2_2 = nexttile; 
+% 
+% % Adaptive loss plot
+% for i = 1:param.numFactories
+%     plot(ax2_2, adap_steps, [adaptive.Tot{i, :}], '-', ...
+%         'LineWidth', 2, 'DisplayName', ...
+%         strcat('Self-Adaptive Smart Factory', sprintf('%2d', i)))
+%     hold on
+% end
 % 
 % 
-% fprintf('Loss of the minimum of our own method: %d \n', ...
-%      min([dynamic_loss.Minimum{:, iterations(end)}]));
-% fprintf('Loss of the minimum of federated method: %d \n', ...
-%      min([federated_loss.Minimum{:, iterations(end)}]));
+% % Federated loss plot
+% plot(ax2_2, federated_steps, federated_loss_mean, '-', ...
+%         'LineWidth', 2, 'DisplayName', 'Baseline 1')
+% 
+% 
+% % Link the axes
+% linkaxes([ax1_2, ax2_2],'x'); 
+% xlabel('Iterations', 'FontSize', 16), xlim([0 inf])
+% ylabel(ax1_2, 'Accuracy', 'FontSize', 16), ylim(ax1, [0.9 1])
+% ylabel(ax2_2, 'Loss', 'FontSize', 16), ylim(ax2, [0 0.1]) 
+
 
 end
 

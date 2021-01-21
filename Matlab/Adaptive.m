@@ -1,19 +1,17 @@
 function loss = Adaptive(networks, subsets, loss, param)
+
 % SELF-ADAPTIVE
 % Self-adaptive approach is the proposed approach
-% Detailed explanation goes here
-
 
 
 % Global Aggregation
 for global_it = param.globalIterations
-    % Adaptive Framework
     
     % Store the number of global iterations
     g_step = global_it*param.localIterations(end);
 
-    % Industries 
-    for i = 1:param.numIndustries
+    % Factories
+    for i = 1:param.numFactories
         
         % Order of subsets
         subsetsOrder = 1:param.numDevices;
@@ -120,32 +118,24 @@ for global_it = param.globalIterations
     
     % Federated Learning
 
-
-    % Industries 
-    for i = 1:param.numIndustries
-
+    % Initialize layer vector used for aggregation
+    layers = networks{1, loss.MinDevice{1}}.Layers;
     
-        % Federated Learning sum the weights
-        if i == 1      
-            
-            % Initialize layer vector used for aggregation
-            layers = networks{1, loss.MinDevice{1}}.Layers;
-            
-        else
-            for l = 1:length(layers)
+    % Factories 
+    for i = 1:param.numFactories
 
-                % Does layer l have weights?
-                if isprop(layers(l), 'Weights') 
-                    layers(l).Weights = layers(l).Weights + ...
-                        networks{i, loss.MinDevice{i}}.Layers(l).Weights;
-                end
+        for l = 1:length(layers)
 
-                % Does layer l have biases?
-                if isprop(layers(l), 'Bias')
-                    layers(l).Bias = layers(l).Bias + ...
-                        networks{i, loss.MinDevice{i}}.Layers(l).Bias;
+            % Does layer l have weights?
+            if isprop(layers(l), 'Weights') 
+                layers(l).Weights = layers(l).Weights + ...
+                    networks{i, loss.MinDevice{i}}.Layers(l).Weights;
+            end
 
-                end
+            % Does layer l have biases?
+            if isprop(layers(l), 'Bias')
+                layers(l).Bias = layers(l).Bias + ...
+                    networks{i, loss.MinDevice{i}}.Layers(l).Bias;
 
             end
 
@@ -159,18 +149,18 @@ for global_it = param.globalIterations
         % Does layer l have weights?
         if isprop(layers(l), 'Weights')
             
-            layers(l).Weights = layers(l).Weights / param.numIndustries;
+            layers(l).Weights = layers(l).Weights / param.numFactories;
         end
         
         % Does layer l have biases?
         if isprop(layers(l), 'Bias')
         
-            layers(l).Bias = layers(l).Bias / param.numIndustries;
+            layers(l).Bias = layers(l).Bias / param.numFactories;
         end
     end
 
-    % Industries 
-    for i = 1:param.numIndustries
+    % Factories 
+    for i = 1:param.numFactories
 
         % Devices
         for j = 1:param.numDevices
@@ -184,11 +174,17 @@ for global_it = param.globalIterations
             
             for k = 1:param.numDevices
 
-                % Compute the Loss for each device
+                % Test the trained network of device j 
+                % through the entire data set
                 YPred = classify(networks{i, j}, subsets{i, k});
+                % Correspondingly Labels
                 YTest = subsets{i, k}.Labels;
+                
+                % Compute the loss 
                 loss.Function{i, (j - 1)*param.numDevices + k} = ...
                     1 - sum(YPred == YTest)/numel(YTest);
+                
+                % Compute the accuracy
                 loss.Accuracy{i, (j - 1)*param.numDevices + k} = ...
                     sum(YPred == YTest)/numel(YTest);
 
