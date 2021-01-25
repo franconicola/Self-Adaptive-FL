@@ -15,8 +15,8 @@ for global_it = param.globalIterations
         % Initialize layer vector used for aggregation
         layers = networks{1, 1}.Layers;
         
-        % Industries 
-        for i = 1:param.numIndustries
+        % Factories 
+        for i = 1:param.numFactories
             
             % Devices
             for j = 1:param.numDevices
@@ -65,19 +65,19 @@ for global_it = param.globalIterations
 
                 layers(l).Weights = ...
                     layers(l).Weights / (param.numDevices * ...
-                    param.numIndustries);
+                    param.numFactories);
             end
 
             % Does layer l have biases?
             if isprop(layers(l), 'Bias')
 
                 layers(l).Bias = layers(l).Bias / (param.numDevices * ...
-                    param.numIndustries);
+                    param.numFactories);
             end
         end
         
-
-        for i = 1:param.numIndustries
+        % Factories 
+        for i = 1:param.numFactories
 
             % Devices
             for j = 1:param.numDevices
