@@ -13,10 +13,10 @@ param.numFactories = 4;
 param.numDevices = 20;
 
 % Number of local iterations
-param.localIterations = 1:10;
+param.localIterations = 1:15;
 
 % Number of global iterations
-param.globalIterations = 1:10;
+param.globalIterations = 1:15;
 
 % Training options
 param.options = trainingOptions('sgdm', ...
