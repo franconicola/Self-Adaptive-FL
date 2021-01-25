@@ -3,9 +3,6 @@ function H = SimplexFunction(Htmp, H, m)
 %   Detailed explanation goes here 
 % m is the number of agents
 
-%Number of Parameters
-n = m*m;
-
 %Number of Artificial parameters
 v = m*2;
 
@@ -28,7 +25,8 @@ for e =1:size(Htmp,2)
 
         B = H(1:v,m+1:m+v);
 
-        r_e = [Htmp(v+1,e)-Htmp(1:v,e)'*inv(B)'*H(v+1,m+1:m+v)' Htmp(1:v,e)'*inv(B)'];
+        r_e = [Htmp(v+1,e)-Htmp(1:v,e)'*inv(B)'*H(v+1,m+1:m+v)' ...
+            Htmp(1:v,e)'*inv(B)'];
 
         % Lexsort
         k = 1;
